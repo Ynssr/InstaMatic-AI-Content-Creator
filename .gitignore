@@ -1,0 +1,14 @@
+
+api_key.py
+*_session.json
+
+config.json
+style_examples.txt
+
+/dist/
+/build/
+
+__pycache__/
+*.pyc
+
+.DS_Store
