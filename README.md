@@ -1,68 +1,71 @@
-# InstaMatic - Yapay Zeka Destekli Instagram İçerik Asistanı
+# InstaMatic v3.1 - Yapay Zeka Destekli İçerik Üretim Stüdyosu
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=for-the-badge&logo=python) ![Lisans](https://img.shields.io/badge/Lisans-MIT-green?style=for-the-badge)
 
-Bu proje, bir görseli ve metni alarak Instagram için optimize edilmiş, yapay zeka destekli, şık ve profesyonel gönderiler hazırlayan bir masaüstü uygulamasıdır.
+InstaMatic, statik görselleri Instagram için optimize edilmiş, dikkat çekici ve profesyonel gönderilere dönüştüren, Google Gemini Pro yapay zeka modeliyle güçlendirilmiş bir masaüstü uygulamasıdır.
 
-<img width="1919" height="1026" alt="image" src="https://github.com/user-attachments/assets/016a04c7-b2cb-4db4-9555-3474dd246987" />
+<img width="1919" height="1028" alt="image" src="https://github.com/user-attachments/assets/cdc09037-1433-436f-914b-fb19caf5a7a8" />
 
 
 ---
 
 ## 🌟 Ana Özellikler
 
-# Gelişmiş Görsel Düzenleme
-* İnteraktif Kırpma: 4:5 dikey formatta, fare ile sürükleyerek hassas kırpma.
-* Profesyonel Hizalama: `Ctrl` tuşu ile merkeze yapışma (snap) ve `Shift` tuşu ile eksene kilitleme (axis-lock).
-* Dinamik Metin Yerleşimi:
-    * Yazı tipi, boyut, renk, konum (üst/alt) ve dış çizgi (stroke) ayarları.
-    * Metin genişliği ve arka plan yoğunluğu üzerinde tam kontrol.
-    * Manuel satır atlama (`Enter` tuşu) desteği.
-* Otomatik Logo/Filigran: Seçilen bir logoyu resmin dört köşesinden birine otomatik olarak ekleme.
+### Profesyonel Hizalama ve Kırpma Araçları
+* **Esnek En-Boy Oranı:** Instagram'ın tüm popüler formatları (`4:5`, `1:1`, `9:16`, `1.91:1`) arasında tek tıkla geçiş yapma.
+* **"Orijinal Oranı Koru":** Resminiz Instagram limitlerindeyse hiç kırpma yapmadan kullanma imkanı.
+* **İnteraktif Kırpma:** Fare ile sürükleyerek mükemmel kompozisyonu yakalama.
+* **Akıllı Kılavuzlar:**
+    * **`Ctrl` Tuşu:** Kırpma kutusunu resmin tam merkezine bir mıknatıs gibi "yapıştırır" (Snap-to-guide).
+    * **`Shift` Tuşu:** Sürükleme hareketini sadece dikey veya yatay eksene kilitleyerek hassas kaydırma sağlar (Axis-lock).
 
-# Yapay Zeka Asistanı (Google Gemini Pro)
-* Görsel Analiz: Sadece resme bakarak sıfırdan, yaratıcı gönderi metinleri ve hashtag'ler üretme.
-* Stil Öğrenme: `style_examples.txt` dosyasına eklenen örneklerden kullanıcının yazım stilini öğrenme ve taklit etme.
-* Ton Seçimi: "Haber Dili", "Samimi", "Profesyonel" gibi farklı tonlarda içerik üretme.
-* Korunacak Terimler: Anime/Manga isimleri gibi özel terimlerin çevrilmesini engelleme.
+### Gelişmiş Tasarım ve Stil Kontrolü
+* **Dinamik Metin Yerleşimi:** Metinleri resmin üstüne veya altına yerleştirme.
+* **Tam Kontrol:** Font boyutu, metin genişliği (kenar boşlukları) ve arka plan yoğunluğu üzerinde hassas sayısal kontrol.
+* **Özelleştirilebilir Renkler:** Renk paletinden metin ve yarı saydam arka plan için istenilen rengi seçme.
+* **Metin Dış Çizgisi (Stroke):** Metin okunurluğunu artırmak için tek tıkla dış hat ekleme.
+* **Otomatik Logo/Filigran:** Şirket veya kişisel logonuzu seçilen konuma ve yoğunluğa göre otomatik olarak ekleme.
 
-# Kullanıcı Deneyimi
-* Modern Koyu Tema: Göz yormayan, şık ve kullanışlı arayüz.
-* Katlanabilir Menüler: Dağınıklığı önleyen, odaklanmayı kolaylaştıran arayüz tasarımı.
-* Gelişmiş Font Tarayıcı: Bilgisayarda yüklü fontları kendi stilleriyle önizleyerek seçme imkanı.
-* Ayar Hafızası: Tüm stil ve logo ayarlarının `config.json` dosyasına kaydedilip her açılışta geri yüklenmesi.
+### Yapay Zeka Yetenekleri (Google Gemini Pro)
+* **Görsel Analiz (Image-to-Text):** Sadece resme bakarak sıfırdan, yaratıcı gönderi metinleri ve hashtag'ler üretme.
+* **Stil Öğrenme:** `style_examples.txt` dosyasına eklenen örneklerden kullanıcının kendi yazım stilini öğrenme ve taklit etme.
+* **Ton Seçimi:** "Haber Dili", "Samimi", "Profesyonel" gibi farklı tonlarda içerik üretme.
+* **Korunacak Terimler:** Anime/Manga isimleri gibi özel terimlerin çevrilmesini veya değiştirilmesini engelleme.
+* **Akıllı API Kullanımı:** Birden çok AI görevini (açıklama, çeviri, hashtag) tek bir istekte birleştirerek API limitlerini verimli kullanma.
+
+### Kullanım Kolaylığı
+* **Modern Koyu Tema:** Göz yormayan, şık ve kullanışlı arayüz.
+* **Katlanabilir Menüler:** Dağınıklığı önleyen, odaklanmayı kolaylaştıran arayüz tasarımı.
+* **Gelişmiş Font Tarayıcı:** Bilgisayarda yüklü fontları kendi stilleriyle önizleyerek seçme imkanı.
+* **Ayar Hafızası:** Tüm stil, oran ve logo ayarlarının `config.json` dosyasına kaydedilip her açılışta geri yüklenmesi.
 
 ---
 
 ## 🛠️ Kurulum
 
-1.  Projeyi Klonlayın:
+1.  **Projeyi Klonlayın:**
     ```bash
     git clone [https://github.com/SENIN_KULLANICI_ADIN/RepoAdin.git](https://github.com/SENIN_KULLANICI_ADIN/RepoAdin.git)
     cd RepoAdin
     ```
 
-2.  Gerekli Kütüphaneleri Yükleyin:
-    ```bash
-    pip install -r requirements.txt
-    ```
-    *(Not: `requirements.txt` dosyasını oluşturmak için Adım 2'ye bakın)*
+2.  **Gerekli Kütüphaneleri Yükleyin:**
+    * Proje klasöründe `requirements.txt` adında bir dosya oluşturun ve içine aşağıdakileri yazın:
+      ```
+      Pillow
+      google-generativeai
+      fonttools
+      ```
+    * Ardından terminalde şu komutu çalıştırın:
+      ```bash
+      pip install -r requirements.txt
+      ```
 
-3.  API Anahtarını Ayarlayın:
+3.  **API Anahtarını Ayarlayın:**
     * Proje ana klasöründe `api_key.py` adında bir dosya oluşturun.
     * İçine `API_KEY = "BURAYA_KENDİ_API_ANAHTARINIZI_YAPIŞTIRIN"` satırını ekleyip kaydedin.
 
-4.  Programı Çalıştırın:
+4.  **Programı Çalıştırın:**
     ```bash
     python instamatic.py
     ```
-
----
-
-## 🚀 Kullanım
-
-1.  Resim Seç: Üzerinde çalışmak istediğiniz görseli seçin.
-2.  Kırp ve Hazırla: Kırmızı dörtgeni ayarladıktan sonra "Alanı Kırp ve Hazırla" butonuna basın.
-3.  Stilleri Ayarla: Metin, renk, logo ve diğer tüm stil ayarlarını yapın. Değişiklikleri görmek için "Stil Değişikliklerini Uygula" butonuna basın.
-4.  AI Asistanı: Metin kutularını doldurun ve AI Asistanı ile içeriklerinizi (açıklama, çeviri, hashtag) zenginleştirin.
-5.  Kaydet: "Hazırlanan Resimleri Kaydet" butonu ile son çıktıları bilgisayarınıza indirin.
