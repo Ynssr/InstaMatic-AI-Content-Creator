@@ -8,8 +8,8 @@ import textwrap
 import json
 from threading import Thread
 import re
-import tempfile
 
+# Gerekli kütüphaneleri kontrol et
 try:
     from fontTools.ttLib import TTFont
 except ImportError:
@@ -28,28 +28,15 @@ if API_KEY and API_KEY != "BURAYA_KENDİ_GERÇEK_API_ANAHTARINIZI_YAPIŞTIRIN":
 else:
     AI_MODEL_CONFIGURED = False
 
+# --- YARDIMCI SINIF: Katlanabilir Menü ---
 class CollapsiblePane(ttk.Frame):
     def __init__(self, parent, text=""):
-        super().__init__(parent, style='Collapsible.TFrame')
-        self.parent = parent
-        self.columnconfigure(0, weight=1)
-        self._text = text
-        self._is_open = False
-
-        self.toggle_button = ttk.Button(self, text=f'► {self._text}', command=self.toggle, style='Toolbutton')
-        self.toggle_button.grid(row=0, column=0, sticky='ew')
-        
-        self.content_frame = ttk.Frame(self)
-
+        super().__init__(parent, style='Collapsible.TFrame'); self.parent = parent; self.columnconfigure(0, weight=1); self._text = text
+        self.toggle_button = ttk.Button(self, text=f'► {self._text}', command=self.toggle, style='Toolbutton'); self.toggle_button.grid(row=0, column=0, sticky='ew')
+        self.content_frame = ttk.Frame(self); self.is_open = tk.BooleanVar(value=False)
     def toggle(self):
-        if self._is_open:
-            self.content_frame.grid_forget()
-            self.toggle_button.configure(text=f'► {self._text}')
-            self._is_open = False
-        else:
-            self.content_frame.grid(row=1, column=0, sticky='nsew')
-            self.toggle_button.configure(text=f'▼ {self._text}')
-            self._is_open = True
+        if self.is_open.get(): self.content_frame.grid_forget(); self.toggle_button.configure(text=f'► {self._text}'); self.is_open.set(False)
+        else: self.content_frame.grid(row=1, column=0, sticky='nsew'); self.toggle_button.configure(text=f'▼ {self._text}'); self.is_open.set(True)
 
 # --- YARDIMCI SINIF: Font Tarayıcı ---
 class FontBrowser(tk.Toplevel):
@@ -100,7 +87,7 @@ class FontBrowser(tk.Toplevel):
 class InstaMaticApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("InstaMatic v3.0 - Final Sürümü")
+        self.root.title("InstaMatic v3.2 - Kırpma Sınırlandırması")
         self.root.geometry("1200x800")
         
         # Tema ve Stil Ayarları
@@ -121,8 +108,6 @@ class InstaMaticApp:
         self.crop_rect_id = None; self.rect_start_x = 0; self.rect_start_y = 0; self.base_cropped_image = None
         self.guide_h = None; self.guide_v = None; self.guide_center_x = 0; self.guide_center_y = 0
         self.drag_axis_lock = None; self.style_examples = None
-        
-        # Ayarlanabilir Değişkenler
         self.font_path = tk.StringVar(value="arial.ttf"); self.logo_path = tk.StringVar()
         self.font_size = tk.IntVar(value=72); self.text_padding = tk.IntVar(value=90); self.bg_opacity = tk.IntVar(value=50)
         self.text_color_on_img = tk.StringVar(value="#FFFFFF"); self.bg_color_rgb_on_img = (0, 0, 0)
@@ -130,6 +115,7 @@ class InstaMaticApp:
         self.logo_position = tk.StringVar(value="br"); self.logo_opacity = tk.IntVar(value=70)
         self.ai_tone = tk.StringVar(value="Haber / Bilgilendirici"); self.ai_analyze_image = tk.BooleanVar(value=False)
         self.logo_image = None; self.is_ai_running = False
+        self.aspect_ratio = tk.StringVar(value="4:5")
         
         self.model = genai.GenerativeModel('gemini-1.5-pro') if AI_MODEL_CONFIGURED else None
         
@@ -145,6 +131,12 @@ class InstaMaticApp:
         ttk.Label(control_frame, text="InstaMatic", font=("Helvetica", 18, "bold")).pack(pady=10); ttk.Separator(control_frame, orient='horizontal').pack(fill='x', padx=10, pady=5)
         ttk.Button(control_frame, text="1. Resim Seç", command=self.load_image).pack(fill=tk.X, padx=10, pady=5)
         
+        ratio_pane = CollapsiblePane(control_frame, text="En-Boy Oranı"); ratio_pane.pack(fill=tk.X, padx=10, pady=5, anchor='n')
+        ratio_frame = ttk.Frame(ratio_pane.content_frame); ratio_frame.pack(fill=tk.X, padx=5, pady=5)
+        ratios = {"Orijinal": "original", "Dikey (4:5)": "4:5", "Kare (1:1)": "1:1", "Tam Dikey (9:16)": "9:16", "Yatay (1.91:1)": "1.91:1"}
+        for i, (text, value) in enumerate(ratios.items()):
+            ttk.Radiobutton(ratio_frame, text=text, variable=self.aspect_ratio, value=value, command=self.on_ratio_change).grid(row=i//3, column=i%3, sticky='w', padx=5, pady=2)
+
         style_pane = CollapsiblePane(control_frame, text="Stil Ayarları"); style_pane.pack(fill=tk.X, padx=10, pady=5, anchor='n')
         font_frame = ttk.Frame(style_pane.content_frame); font_frame.pack(fill=tk.X, pady=2, padx=5)
         ttk.Button(font_frame, text="Font Seç", command=self.select_font).pack(side=tk.LEFT, expand=True, fill=tk.X)
@@ -210,20 +202,44 @@ class InstaMaticApp:
 
     def on_drag(self, event):
         if not self.crop_rect_id: return
-        dx, dy = event.x - self.rect_start_x, event.y - self.rect_start_y
+        
+        dx = event.x - self.rect_start_x
+        dy = event.y - self.rect_start_y
+        
+        # Sınırları al
+        img_bounds = self.display_img_info
+        img_x1, img_y1 = img_bounds['x'], img_bounds['y']
+        img_x2, img_y2 = img_x1 + img_bounds['width'], img_y1 + img_bounds['height']
+        
+        # Mevcut kutu koordinatları
+        x1, y1, x2, y2 = self.canvas.coords(self.crop_rect_id)
+        
+        # Potansiyel yeni koordinatlar
+        next_x1, next_y1 = x1 + dx, y1 + dy
+        next_x2, next_y2 = x2 + dx, y2 + dy
+        
+        # Hareketi sınırla
+        if next_x1 < img_x1: dx = img_x1 - x1
+        if next_x2 > img_x2: dx = img_x2 - x2
+        if next_y1 < img_y1: dy = img_y1 - y1
+        if next_y2 > img_y2: dy = img_y2 - y2
+
+        # Kilit ve yapışma mantığı
         if self.drag_axis_lock:
             if self.drag_axis_lock == 'undetermined':
                 if abs(dx) > abs(dy): self.drag_axis_lock = 'h'
                 else: self.drag_axis_lock = 'v'
             if self.drag_axis_lock == 'h': dy = 0
             elif self.drag_axis_lock == 'v': dx = 0
+        
         is_ctrl_only = (event.state & 0x4) and not (event.state & 0x1)
         if is_ctrl_only and self.guide_h:
-            snap_tolerance = 10; x1, y1, x2, y2 = self.canvas.coords(self.crop_rect_id)
+            snap_tolerance = 10
             rect_center_x, rect_center_y = (x1 + x2) / 2, (y1 + y2) / 2
             new_center_x, new_center_y = rect_center_x + dx, rect_center_y + dy
             if abs(new_center_x - self.guide_center_x) < snap_tolerance: dx = self.guide_center_x - rect_center_x
             if abs(new_center_y - self.guide_center_y) < snap_tolerance: dy = self.guide_center_y - rect_center_y
+        
         self.canvas.move(self.crop_rect_id, dx, dy)
         self.rect_start_x, self.rect_start_y = event.x, event.y
     
@@ -280,15 +296,39 @@ class InstaMaticApp:
         image = self._add_logo(image)
         return image
     
+    def on_ratio_change(self):
+        if self.original_image: self.draw_crop_rectangle()
+        self.save_config()
+
     def crop_and_prepare(self):
         if not self.original_image: messagebox.showerror("Hata", "Lütfen önce bir resim seçin!"); return
-        if not self.crop_rect_id: messagebox.showerror("Hata", "Lütfen resim üzerinde bir kırpma alanı seçin."); return
+        ratio_str = self.aspect_ratio.get()
+        target_size = (1080, 1350)
+        
+        if ratio_str == "original":
+            original_ratio = self.original_image.width / self.original_image.height
+            if 0.8 <= original_ratio <= 1.91:
+                cropped_piece = self.original_image.copy()
+                target_h = int(1080 / original_ratio)
+                target_size = (1080, target_h)
+            else:
+                if not self.crop_rect_id: messagebox.showerror("Hata", "Orijinal oran limit dışı. Lütfen bir kırpma alanı seçin."); return
+                coords = self.canvas.coords(self.crop_rect_id); info = self.display_img_info; scale = info['scale_factor']
+                x1, y1, x2, y2 = (coords[0] - info['x']) * scale, (coords[1] - info['y']) * scale, (coords[2] - info['x']) * scale, (coords[3] - info['y']) * scale
+                cropped_piece = self.original_image.crop((x1, y1, x2, y2))
+        else:
+            if not self.crop_rect_id: messagebox.showerror("Hata", "Lütfen resim üzerinde bir kırpma alanı seçin."); return
+            coords = self.canvas.coords(self.crop_rect_id); info = self.display_img_info; scale = info['scale_factor']
+            x1, y1, x2, y2 = (coords[0] - info['x']) * scale, (coords[1] - info['y']) * scale, (coords[2] - info['x']) * scale, (coords[3] - info['y']) * scale
+            cropped_piece = self.original_image.crop((x1, y1, x2, y2))
+            if ratio_str == "1:1": target_size = (1080, 1080)
+            elif ratio_str == "9:16": target_size = (1080, 1920)
+            elif ratio_str == "1.91:1": target_size = (1080, 566)
+            else: target_size = (1080, 1350)
+
         self.hide_guides()
-        coords = self.canvas.coords(self.crop_rect_id); info = self.display_img_info; scale = info['scale_factor']
-        x1, y1, x2, y2 = (coords[0] - info['x']) * scale, (coords[1] - info['y']) * scale, (coords[2] - info['x']) * scale, (coords[3] - info['y']) * scale
-        cropped_piece = self.original_image.crop((x1, y1, x2, y2))
-        self.base_cropped_image = cropped_piece.resize((1080, 1350), Image.Resampling.LANCZOS)
-        self.canvas.delete(self.crop_rect_id); self.crop_rect_id = None
+        self.base_cropped_image = cropped_piece.resize(target_size, Image.Resampling.LANCZOS)
+        if self.crop_rect_id: self.canvas.delete(self.crop_rect_id); self.crop_rect_id = None
         self.btn_crop.config(state=tk.DISABLED); self.btn_update_text.config(state=tk.NORMAL); self.update_text_styles()
 
     def update_text_styles(self):
@@ -335,11 +375,24 @@ class InstaMaticApp:
             
     def draw_crop_rectangle(self):
         if self.crop_rect_id: self.canvas.delete(self.crop_rect_id)
+        if not self.display_img_info or not self.original_image: return
         info = self.display_img_info;
+        ratio_str = self.aspect_ratio.get(); target_ratio = 4.0 / 5.0
+
+        if ratio_str == "original":
+            original_ratio = self.original_image.width / self.original_image.height
+            if 0.8 <= original_ratio <= 1.91: target_ratio = original_ratio
+            else:
+                self.aspect_ratio.set("4:5"); messagebox.showinfo("Oran Uyumsuz", f"Orijinal oran ({original_ratio:.2f}) Instagram limitleri dışındadır.\nEn yakın güvenli oran olan 4:5'e ayarlandı.")
+                target_ratio = 4.0 / 5.0
+        elif ratio_str == "1:1": target_ratio = 1.0
+        elif ratio_str == "9:16": target_ratio = 9.0 / 16.0
+        elif ratio_str == "1.91:1": target_ratio = 1.91
+        
         if info['width'] == 0 or info['height'] == 0: return
-        target_ratio = 4 / 5
-        if info['width'] / info['height'] > target_ratio: crop_width, crop_height = info['width'] * 0.8, (info['width'] * 0.8) / target_ratio
-        else: crop_height, crop_width = info['height'] * 0.8, (info['height'] * 0.8) * target_ratio
+        display_ratio = info['width'] / info['height']
+        if display_ratio > target_ratio: crop_height = info['height'] * 0.98; crop_width = crop_height * target_ratio
+        else: crop_width = info['width'] * 0.98; crop_height = crop_width / target_ratio
         x1, y1 = info['x'] + (info['width'] - crop_width) / 2, info['y'] + (info['height'] - crop_height) / 2
         x2, y2 = x1 + crop_width, y1 + crop_height
         self.crop_rect_id = self.canvas.create_rectangle(x1, y1, x2, y2, outline="red", width=2)
@@ -359,7 +412,7 @@ class InstaMaticApp:
         except Exception as e: messagebox.showerror("Hata", f"Logo dosyası yüklenemedi: {e}")
             
     def save_config(self):
-        config_data = {"font_path": self.font_path.get(), "logo_path": self.logo_path.get(), "font_size": self.font_size.get(), "text_padding": self.text_padding.get(), "bg_opacity": self.bg_opacity.get(), "text_color": self.text_color_on_img.get(), "bg_color_rgb": self.bg_color_rgb_on_img, "add_stroke": self.add_stroke.get(), "text_position": self.text_position.get(), "logo_position": self.logo_position.get(), "logo_opacity": self.logo_opacity.get(), "ai_tone": self.ai_tone.get()}
+        config_data = {"font_path": self.font_path.get(), "logo_path": self.logo_path.get(), "font_size": self.font_size.get(), "text_padding": self.text_padding.get(), "bg_opacity": self.bg_opacity.get(), "text_color": self.text_color_on_img.get(), "bg_color_rgb": self.bg_color_rgb_on_img, "add_stroke": self.add_stroke.get(), "text_position": self.text_position.get(), "logo_position": self.logo_position.get(), "logo_opacity": self.logo_opacity.get(), "ai_tone": self.ai_tone.get(), "aspect_ratio": self.aspect_ratio.get()}
         try:
             with open("config.json", "w") as f: json.dump(config_data, f, indent=4)
         except Exception as e: print(f"Ayarlar kaydedilirken hata oluştu: {e}")
@@ -377,6 +430,7 @@ class InstaMaticApp:
                 self.add_stroke.set(data.get("add_stroke", False)); self.text_position.set(data.get("text_position", "bottom"))
                 self.logo_position.set(data.get("logo_position", "br")); self.logo_opacity.set(data.get("logo_opacity", 70))
                 self.ai_tone.set(data.get("ai_tone", "Haber / Bilgilendirici"))
+                self.aspect_ratio.set(data.get("aspect_ratio", "4:5"))
         except Exception as e: print(f"Ayarlar yüklenirken hata oluştu: {e}")
         
     def load_style_examples(self):
@@ -416,7 +470,7 @@ class InstaMaticApp:
             if source_lang == 'tr': source_box, target_box, prompt_text = self.text_entry_tr, self.text_entry_en, "Aşağıdaki Türkçe metni İngilizce'ye çevir."
             else: source_box, target_box, prompt_text = self.text_entry_en, self.text_entry_tr, "Aşağıdaki İngilizce metni Türkçe'ye çevir."
             source_text = source_box.get("1.0", tk.END).strip()
-            if not source_text: messagebox.showwarning("Uyarı", "Lütfen çevrilecek bir metin girin."); return
+            if not source_text: messagebox.showwarning("Uyarı", "Lütfen çevrilecek bir metin girin."); self.is_ai_running = False; return
             protected_terms = self.protected_terms_entry.get().strip()
             protection_instruction = f"\nÖNEMLİ KURAL: Şu terimleri asla çevirme, orijinal halleriyle bırak: '{protected_terms}'." if protected_terms else ""
             full_prompt = f"{prompt_text}{protection_instruction}\n\nÇevrilecek Metin: '{source_text}'"
@@ -452,7 +506,6 @@ class InstaMaticApp:
             prompt_parts.append(self.base_cropped_image)
         else:
             prompt_parts.append("Aşağıdaki metne bakarak şu görevleri yerine getir ve sonucu tek bir geçerli JSON objesi olarak döndür:")
-        
         prompt_parts.append(f"""
 JSON objesi şu anahtarları içermelidir: "generated_caption", "english_translation".
 
@@ -467,7 +520,7 @@ Ana Metin: '{base_text if base_text else "Yok"}'
             ai_results = json.loads(json_text)
             self.ai_output_text.delete("1.0", tk.END)
             self.ai_output_text.insert("1.0", ai_results.get("generated_caption", "Açıklama üretilemedi."))
-            if base_text: # Sadece ana metin varsa çevirisini ekle
+            if base_text:
                 self.text_entry_en.delete("1.0", tk.END)
                 self.text_entry_en.insert("1.0", ai_results.get("english_translation", ""))
         except Exception as e:
